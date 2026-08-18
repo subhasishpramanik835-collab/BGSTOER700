@@ -1,0 +1,325 @@
+@import "tailwindcss";
+
+html {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+body {
+  overflow-x: hidden;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* GPU Hardware Acceleration Helper */
+.gpu-accelerate {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 25s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+@keyframes vibrate {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  20% { transform: translate(-1.5px, 1px) rotate(-1deg); }
+  40% { transform: translate(1.5px, -1px) rotate(1deg); }
+  60% { transform: translate(-1px, -1px) rotate(0.5deg); }
+  80% { transform: translate(1px, 1.5px) rotate(-0.5deg); }
+}
+
+.animate-vibrate {
+  animation: vibrate 0.6s ease-in-out infinite;
+}
+
+/* Custom Gold Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #020617;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #f59e0b;
+}
+
+/* Premium HD Gold Luxury Background Mesh - Optimized for 60/120fps scrolling */
+.gold-bg-hd {
+  background-color: #020617;
+  background-image: 
+    radial-gradient(circle at 15% 15%, rgba(245, 158, 11, 0.18) 0%, transparent 45%),
+    radial-gradient(circle at 85% 45%, rgba(217, 119, 6, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 50% 85%, rgba(251, 191, 36, 0.12) 0%, transparent 55%),
+    radial-gradient(circle at 30% 60%, rgba(180, 83, 9, 0.1) 0%, transparent 40%),
+    linear-gradient(180deg, #030712 0%, #020617 50%, #0f172a 100%);
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+/* Round Rainbow Shadow Animation */
+@keyframes rainbow-shadow-anim {
+  0% {
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.4), 0 0 35px rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.6);
+  }
+  20% {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.4), 0 0 35px rgba(16, 185, 129, 0.2);
+    border-color: rgba(16, 185, 129, 0.6);
+  }
+  40% {
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.4), 0 0 35px rgba(6, 182, 212, 0.2);
+    border-color: rgba(6, 182, 212, 0.6);
+  }
+  60% {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.4), 0 0 35px rgba(168, 85, 247, 0.2);
+    border-color: rgba(168, 85, 247, 0.6);
+  }
+  80% {
+    box-shadow: 0 0 20px rgba(244, 63, 94, 0.4), 0 0 35px rgba(244, 63, 94, 0.2);
+    border-color: rgba(244, 63, 94, 0.6);
+  }
+  100% {
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.4), 0 0 35px rgba(245, 158, 11, 0.2);
+    border-color: rgba(245, 158, 11, 0.6);
+  }
+}
+
+.rainbow-shadow-glow {
+  animation: rainbow-shadow-anim 5s linear infinite;
+}
+
+.golden-shadow-btn {
+  box-shadow: 0 4px 20px -2px rgba(245, 158, 11, 0.35);
+  transition: all 0.2s ease-in-out;
+}
+
+.golden-shadow-btn:hover {
+  box-shadow: 0 6px 28px 0px rgba(245, 158, 11, 0.55);
+  transform: translateY(-1px);
+}
+
+/* Red Signal Zoom In / Zoom Out Animation for Loss */
+@keyframes pulse-zoom-red-anim {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(244, 63, 94, 0.3);
+  }
+  50% {
+    transform: scale(1.08);
+    box-shadow: 0 0 22px rgba(244, 63, 94, 0.8);
+  }
+}
+
+.animate-zoom-red {
+  animation: pulse-zoom-red-anim 1.5s ease-in-out infinite;
+}
+
+/* Green Signal Zoom In / Zoom Out Animation for Win */
+@keyframes pulse-zoom-green-anim {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+  }
+  50% {
+    transform: scale(1.08);
+    box-shadow: 0 0 22px rgba(16, 185, 129, 0.8);
+  }
+}
+
+.animate-zoom-green {
+  animation: pulse-zoom-green-anim 1.5s ease-in-out infinite;
+}
+
+/* Electric Lightning Strike Animations for Lightning Roulette (Smooth Realistic Electric Bolts - No Shaking) */
+@keyframes lightning-border-plasma {
+  0%, 100% {
+    box-shadow: 0 0 14px rgba(245, 158, 11, 0.9), inset 0 0 10px rgba(251, 191, 36, 0.7), 0 0 28px rgba(245, 158, 11, 0.5);
+    border-color: #fbbf24;
+  }
+  30% {
+    box-shadow: 0 0 22px rgba(56, 189, 248, 0.95), inset 0 0 12px rgba(125, 211, 252, 0.8), 0 0 35px rgba(56, 189, 248, 0.7);
+    border-color: #e0f2fe;
+  }
+  70% {
+    box-shadow: 0 0 24px rgba(250, 204, 21, 0.95), inset 0 0 12px rgba(254, 240, 138, 0.8), 0 0 40px rgba(234, 179, 8, 0.8);
+    border-color: #ffffff;
+  }
+}
+
+.animate-lightning-strike {
+  animation: lightning-border-plasma 1.2s infinite ease-in-out;
+}
+
+/* Realistic Vertical Lightning Bolt Descending From Sky/Top */
+@keyframes lightning-bolt-fall {
+  0% {
+    opacity: 0;
+    transform: translateY(-80%) scaleY(0.2);
+    filter: brightness(3) drop-shadow(0 0 15px #38bdf8);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+    filter: brightness(4) drop-shadow(0 0 25px #ffffff) drop-shadow(0 0 35px #f59e0b);
+  }
+  30% {
+    opacity: 0.3;
+    transform: translateY(0) scaleY(1);
+  }
+  45% {
+    opacity: 1;
+    transform: translateY(0) scaleY(1.05);
+    filter: brightness(3.5) drop-shadow(0 0 20px #38bdf8);
+  }
+  70% {
+    opacity: 0.85;
+    transform: translateY(0) scaleY(1);
+  }
+  100% {
+    opacity: 0.95;
+    transform: translateY(0) scaleY(1);
+    filter: brightness(2) drop-shadow(0 0 12px #fbbf24);
+  }
+}
+
+.animate-lightning-bolt {
+  animation: lightning-bolt-fall 0.8s ease-out infinite alternate;
+  transform-origin: top center;
+}
+
+/* Golden Art-Deco Card Reveal for Hindi Lightning Roulette */
+@keyframes gold-card-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(-50px) scale(0.7) rotateX(45deg);
+    filter: brightness(3) drop-shadow(0 0 25px #fbbf24);
+  }
+  60% {
+    transform: translateY(4px) scale(1.04) rotateX(0deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotateX(0deg);
+    filter: brightness(1) drop-shadow(0 0 15px rgba(245, 158, 11, 0.7));
+  }
+}
+
+.animate-gold-card {
+  animation: gold-card-drop 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Winner Zoom Pocket Animation */
+@keyframes winner-pocket-zoom {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) translateY(20px);
+  }
+  50% {
+    transform: scale(1.1) translateY(-4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-winner-zoom {
+  animation: winner-pocket-zoom 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Live Floating Winners Toast */
+@keyframes winner-toast-slide {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.9);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  85% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.9);
+  }
+}
+
+.animate-winner-toast {
+  animation: winner-toast-slide 3.5s ease-in-out forwards;
+}
+
+/* Golden Lotus Center Ambient Glow */
+@keyframes lotus-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.6)) brightness(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 18px rgba(251, 191, 36, 0.9)) brightness(1.2);
+  }
+}
+
+.animate-lotus-glow {
+  animation: lotus-glow 2.5s infinite ease-in-out;
+}
+
+/* Ground Spark Burst at contact point */
+@keyframes spark-plasma-pulse {
+  0%, 100% {
+    transform: scale(0.9);
+    opacity: 0.7;
+    filter: drop-shadow(0 0 6px #f59e0b);
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+    filter: drop-shadow(0 0 14px #ffffff) drop-shadow(0 0 20px #38bdf8);
+  }
+}
+
+.animate-spark-plasma {
+  animation: spark-plasma-pulse 0.7s infinite ease-in-out;
+}
+
+@keyframes lightning-flash-overlay {
+  0% { opacity: 0; }
+  10%, 25% { opacity: 0.75; }
+  15%, 35% { opacity: 0.15; }
+  45% { opacity: 0.9; }
+  60% { opacity: 0.25; }
+  100% { opacity: 0; }
+}
+
+.animate-lightning-flash {
+  animation: lightning-flash-overlay 1.2s ease-out forwards;
+}
+
+
+
+

@@ -1,0 +1,8 @@
+{
+  "name": "Remix BETGURU",
+  "description": "Premium HD Lottery \u0026 Gaming Platform with Real-time Draws, Secure Wallet Deposit/Withdrawal, and Admin Management Dashboard",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -1,0 +1,136 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Server-side role verification via Firebase Custom Claims & Admin Emails
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.get('role', '') in ['admin', 'super_admin'] ||
+        request.auth.token.get('admin', false) == true ||
+        request.auth.token.get('super_admin', false) == true ||
+        request.auth.token.email.lower() in ['subhasishpramanik835@gmail.com', 'asishp92@gmail.com']
+      );
+    }
+
+    // Payment Config collection
+    match /payment_config/{configId} {
+      allow read: if true;
+      allow write: if isSignedIn() || true;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if isSignedIn() || true;
+      allow update: if isSignedIn() || true;
+      allow delete: if isAdmin();
+    }
+
+    // Draws collection
+    match /draws/{drawId} {
+      allow read: if true;
+      allow write: if isSignedIn() || true;
+    }
+
+    // Deposits collection
+    match /deposits/{depositId} {
+      allow read: if true;
+      allow create: if isSignedIn() || true;
+      allow update: if isSignedIn() || true;
+      allow delete: if isAdmin();
+    }
+
+    // Withdrawals collection
+    match /withdrawals/{withdrawalId} {
+      allow read: if true;
+      allow create: if isSignedIn() || true;
+      allow update: if isSignedIn() || true;
+      allow delete: if isAdmin();
+    }
+
+    // Tickets collection
+    match /tickets/{ticketId} {
+      allow read: if true;
+      allow create: if isSignedIn() || true;
+      allow update: if isSignedIn() || true;
+      allow delete: if isAdmin();
+    }
+
+    // Transactions collection
+    match /transactions/{transactionId} {
+      allow read: if true;
+      allow create: if isSignedIn() || true;
+      allow update: if isSignedIn() || true;
+      allow delete: if isAdmin();
+    }
+
+    // Notifications collection
+    match /notifications/{notificationId} {
+      allow read: if true;
+      allow create, update: if isSignedIn() || true;
+      allow delete: if isAdmin();
+    }
+
+    // Analytics collection
+    match /analytics/{analyticsId} {
+      allow create: if true;
+      allow read: if true;
+    }
+
+    // Super Car Draw collections
+    match /supercar_config/{configId} {
+      allow read: if true;
+      allow write: if isSignedIn() || true;
+    }
+    match /supercar_draws/{drawId} {
+      allow read: if true;
+      allow create, update: if isSignedIn() || true;
+      allow delete: if isAdmin();
+    }
+
+    // Connection test document
+    match /_connection_test_/{docId} {
+      allow read, write: if true;
+    }
+
+    // Broadcasts collection
+    match /broadcasts/{broadcastId} {
+      allow read: if true;
+      allow create, update: if isSignedIn() || true;
+      allow delete: if isAdmin();
+    }
+
+    // System Settings collection (e.g. registration_config, smtp_config)
+    match /system_settings/{settingId} {
+      allow read: if true;
+      allow write: if isSignedIn() || true;
+    }
+
+    // Banner Sliders collection
+    match /banner_sliders/{sliderId} {
+      allow read: if true;
+      allow write: if isSignedIn() || true;
+    }
+
+    // Bonus Rules collection
+    match /bonus_rules/{ruleId} {
+      allow read: if true;
+      allow write: if isSignedIn() || true;
+    }
+
+    // Default catch-all
+    match /{document=**} {
+      allow read, write: if isSignedIn() || true;
+    }
+  }
+}
+
