@@ -80,6 +80,7 @@ export interface BonusBalanceRules {
 export interface WalletTransaction {
   id: string;
   userId: string;
+  userEmail?: string;
   type: 'deposit' | 'withdrawal' | 'ticket_buy' | 'win_payout' | 'wheel_bonus' | 'admin_bonus' | 'admin_deduction' | 'roulette_bet' | 'roulette_win' | 'andar_bahar_bet' | 'andar_bahar_win' | 'dragon_tiger_bet' | 'dragon_tiger_win' | 'vip_bonus' | 'loss' | 'win' | 'ticket_win' | 'ticket_loss';
   amount: number;
   description: string;

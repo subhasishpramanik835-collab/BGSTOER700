@@ -115,6 +115,17 @@ export default function App() {
         updateData.bonusBalance = newBonusBalance;
       }
 
+      // Update localStorage cached user immediately
+      try {
+        const storedUser = localStorage.getItem('betguru_user');
+        if (storedUser) {
+          const parsed = JSON.parse(storedUser);
+          parsed.balance = newBalance;
+          if (typeof newBonusBalance === 'number') parsed.bonusBalance = newBonusBalance;
+          localStorage.setItem('betguru_user', JSON.stringify(parsed));
+        }
+      } catch (_) {}
+
       // 1. Primary Doc Update
       const userRef = doc(db, 'users', userId);
       await setDoc(userRef, updateData, { merge: true });
@@ -148,8 +159,18 @@ export default function App() {
       const txRef = doc(db, 'transactions', tx.id);
       const sanitizedTx = {
         ...tx,
+        userId: tx.userId || user?.id || 'anonymous',
+        userEmail: (tx.userEmail || user?.email || '').toLowerCase().trim(),
         createdAt: tx.createdAt || new Date().toISOString()
       };
+
+      try {
+        const stored = localStorage.getItem('betguru_transactions');
+        const list: WalletTransaction[] = stored ? JSON.parse(stored) : [];
+        const updated = sortChronologicalNewestFirst([sanitizedTx as WalletTransaction, ...list.filter(t => t.id !== sanitizedTx.id)]);
+        localStorage.setItem('betguru_transactions', JSON.stringify(updated.slice(0, 500)));
+      } catch (_) {}
+
       await setDoc(txRef, sanitizedTx, { merge: true });
     } catch (err) {
       console.error('Error persisting transaction to Firestore:', err);
@@ -267,7 +288,7 @@ export default function App() {
         if (!txSnap.empty) {
           const allTxs = txSnap.docs.map((d) => ({ id: d.id, ...d.data() } as WalletTransaction));
           if (claimsAdmin) {
-            setTransactions(allTxs);
+            setTransactions(sortChronologicalNewestFirst(allTxs));
           } else {
             const cleanEmail = (userEmail || '').toLowerCase().trim();
             const fallbackUid = `user_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
@@ -275,7 +296,7 @@ export default function App() {
               t.userId === activeUid ||
               (cleanEmail && (t.userId === fallbackUid || t.userId === cleanEmail || (t as any).userEmail === cleanEmail))
             );
-            setTransactions(userFiltered);
+            setTransactions(sortChronologicalNewestFirst(userFiltered));
           }
         } else {
           setTransactions([]);
@@ -290,7 +311,7 @@ export default function App() {
         if (!snap.empty) {
           const allDeps = snap.docs.map((d) => ({ id: d.id, ...d.data() } as DepositRequest));
           if (claimsAdmin) {
-            setDeposits(allDeps);
+            setDeposits(sortChronologicalNewestFirst(allDeps));
           } else {
             const cleanEmail = (userEmail || '').toLowerCase().trim();
             const fallbackUid = `user_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
@@ -298,7 +319,7 @@ export default function App() {
               d.userId === activeUid ||
               (cleanEmail && (d.userId === fallbackUid || d.userId === cleanEmail || (d as any).userEmail === cleanEmail))
             );
-            setDeposits(userFiltered);
+            setDeposits(sortChronologicalNewestFirst(userFiltered));
           }
         } else {
           setDeposits([]);
@@ -313,7 +334,7 @@ export default function App() {
         if (!snap.empty) {
           const allWths = snap.docs.map((d) => ({ id: d.id, ...d.data() } as WithdrawalRequest));
           if (claimsAdmin) {
-            setWithdrawals(allWths);
+            setWithdrawals(sortChronologicalNewestFirst(allWths));
           } else {
             const cleanEmail = (userEmail || '').toLowerCase().trim();
             const fallbackUid = `user_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
@@ -321,7 +342,7 @@ export default function App() {
               w.userId === activeUid ||
               (cleanEmail && (w.userId === fallbackUid || w.userId === cleanEmail || (w as any).userEmail === cleanEmail))
             );
-            setWithdrawals(userFiltered);
+            setWithdrawals(sortChronologicalNewestFirst(userFiltered));
           }
         } else {
           setWithdrawals([]);
@@ -336,7 +357,7 @@ export default function App() {
         if (!ticketSnap.empty) {
           const allTickets = ticketSnap.docs.map((d) => ({ id: d.id, ...d.data() } as PurchasedTicket));
           if (claimsAdmin) {
-            setTickets(allTickets);
+            setTickets(sortChronologicalNewestFirst(allTickets));
           } else {
             const cleanEmail = (userEmail || '').toLowerCase().trim();
             const fallbackUid = `user_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
@@ -344,7 +365,7 @@ export default function App() {
               t.userId === activeUid ||
               (cleanEmail && (t.userId === fallbackUid || t.userId === cleanEmail || (t as any).userEmail === cleanEmail))
             );
-            setTickets(userFiltered);
+            setTickets(sortChronologicalNewestFirst(userFiltered));
           }
         } else {
           setTickets([]);
@@ -359,11 +380,11 @@ export default function App() {
         if (!ntfSnap.empty) {
           const allNtfs = ntfSnap.docs.map((d) => ({ id: d.id, ...d.data() } as NotificationItem));
           if (claimsAdmin) {
-            setNotifications(allNtfs);
+            setNotifications(sortChronologicalNewestFirst(allNtfs));
           } else {
             const cleanEmail = (userEmail || '').toLowerCase().trim();
             const userFiltered = allNtfs.filter((n) => n.userId === activeUid || (cleanEmail && (n as any).userEmail === cleanEmail));
-            setNotifications(userFiltered);
+            setNotifications(sortChronologicalNewestFirst(userFiltered));
           }
         } else {
           setNotifications([]);
@@ -406,9 +427,9 @@ export default function App() {
           if (userSnap && userSnap.exists()) {
             const data = userSnap.data() as User;
             const effectiveRole = claimsAdmin ? 'admin' : (data.role === 'admin' ? 'admin' : (isAdminEmail ? 'admin' : (data.role || 'user')));
-            const effectiveBalance = (isAdminEmail && (typeof data.balance !== 'number' || data.balance < 6435)) 
-              ? 6435.00 
-              : (typeof data.balance === 'number' ? data.balance : 6435.00);
+            const effectiveBalance = typeof data.balance === 'number'
+              ? data.balance
+              : (isAdminEmail ? 6435.00 : 100.00);
             
             const updatedUser: User = {
               ...data,
@@ -436,7 +457,6 @@ export default function App() {
               email: updatedUser.email,
               avatarUrl: updatedUser.avatarUrl,
               role: updatedUser.role,
-              balance: updatedUser.balance,
               lastLogin: new Date().toISOString()
             }, { merge: true }).catch((err) => console.warn('Deferred user update notice:', err));
 
@@ -457,9 +477,9 @@ export default function App() {
 
             const existingData = existingDocByEmail || {};
             const effectiveRole = claimsAdmin ? 'admin' : (existingData.role === 'admin' ? 'admin' : (isAdminEmail ? 'admin' : (existingData.role || 'user')));
-            const effectiveBalance = (isAdminEmail && (typeof existingData.balance !== 'number' || existingData.balance < 6435))
-              ? 6435.00
-              : (typeof existingData.balance === 'number' ? existingData.balance : 6435.00);
+            const effectiveBalance = typeof existingData.balance === 'number'
+              ? existingData.balance
+              : (isAdminEmail ? 6435.00 : 100.00);
 
             const newUserDoc: User = {
               id: fbUser.uid,
@@ -505,9 +525,9 @@ export default function App() {
               if (directSnap.exists()) {
                 const uData = directSnap.data() as User;
                 const isAdminEmail = (uData.email || '').toLowerCase() === 'subhasishpramanik835@gmail.com' || (uData.email || '').toLowerCase() === 'asishp92@gmail.com' || uData.role === 'admin';
-                const effectiveBalance = (isAdminEmail && (typeof uData.balance !== 'number' || uData.balance < 6435))
-                  ? 6435.00
-                  : (typeof uData.balance === 'number' ? uData.balance : 6435.00);
+                const effectiveBalance = typeof uData.balance === 'number'
+                  ? uData.balance
+                  : (isAdminEmail ? 6435.00 : 100.00);
                 const loadedUser: User = {
                   ...uData,
                   id: directUid,
@@ -2262,8 +2282,13 @@ export default function App() {
             });
           }}
           onAddTransaction={(tx) => {
-            setTransactions((prev) => [tx, ...prev]);
-            persistTransaction(tx);
+            const enrichedTx: WalletTransaction = {
+              ...tx,
+              userId: tx.userId || user?.id || 'anonymous',
+              createdAt: tx.createdAt || new Date().toISOString()
+            };
+            setTransactions((prev) => sortChronologicalNewestFirst([enrichedTx, ...prev.filter((t) => t.id !== enrichedTx.id)]));
+            persistTransaction(enrichedTx);
           }}
           onClose={() => setIsDragonTigerOpen(false)}
           onOpenDeposit={() => {
@@ -2285,8 +2310,13 @@ export default function App() {
             });
           }}
           onAddTransaction={(tx) => {
-            setTransactions((prev) => [tx, ...prev]);
-            persistTransaction(tx);
+            const enrichedTx: WalletTransaction = {
+              ...tx,
+              userId: tx.userId || user?.id || 'anonymous',
+              createdAt: tx.createdAt || new Date().toISOString()
+            };
+            setTransactions((prev) => sortChronologicalNewestFirst([enrichedTx, ...prev.filter((t) => t.id !== enrichedTx.id)]));
+            persistTransaction(enrichedTx);
           }}
           onClose={() => setIsLiveRouletteOpen(false)}
           onOpenDeposit={() => {
@@ -2308,8 +2338,13 @@ export default function App() {
             });
           }}
           onAddTransaction={(tx) => {
-            setTransactions((prev) => [tx, ...prev]);
-            persistTransaction(tx);
+            const enrichedTx: WalletTransaction = {
+              ...tx,
+              userId: tx.userId || user?.id || 'anonymous',
+              createdAt: tx.createdAt || new Date().toISOString()
+            };
+            setTransactions((prev) => sortChronologicalNewestFirst([enrichedTx, ...prev.filter((t) => t.id !== enrichedTx.id)]));
+            persistTransaction(enrichedTx);
           }}
           onClose={() => setIsAndarBaharOpen(false)}
           onOpenDeposit={() => {

@@ -320,6 +320,7 @@ export const AndarBaharGame: React.FC<AndarBaharGameProps> = ({
       const winTx: WalletTransaction = {
         id: `tx-ab-win-${Date.now()}`,
         userId: user.id,
+        userEmail: (user.email || '').toLowerCase().trim(),
         type: 'andar_bahar_win',
         amount: wonAmt,
         description: `Won ₹${wonAmt.toLocaleString('en-IN')} on Andar Bahar Round ${roundId} (${winSide.toUpperCase()})`,
@@ -453,8 +454,9 @@ export const AndarBaharGame: React.FC<AndarBaharGameProps> = ({
     const betTx: WalletTransaction = {
       id: `tx-ab-bet-${Date.now()}-${side}`,
       userId: user.id,
+      userEmail: (user.email || '').toLowerCase().trim(),
       type: 'andar_bahar_bet',
-      amount: selectedChip,
+      amount: -selectedChip,
       description: `Placed ₹${selectedChip} on ${side.toUpperCase()} (Round ${roundId})`,
       status: 'completed',
       date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),

@@ -39,8 +39,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 }) => {
   const [copiedId, setCopiedId] = useState<boolean>(false);
   const [copiedRef, setCopiedRef] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<'deposits' | 'withdrawals' | 'tickets' | 'roulette' | 'bonuses' | 'ledger'>('ledger');
+  const [activeTab, setActiveTab] = useState<'deposits' | 'withdrawals' | 'tickets' | 'casino' | 'bonuses' | 'ledger'>('ledger');
   const [ticketFilter, setTicketFilter] = useState<'all' | 'win' | 'loss'>('all');
+  const [casinoSubFilter, setCasinoSubFilter] = useState<'all' | 'roulette' | 'dragon_tiger' | 'andar_bahar'>('all');
   const [hasClaimedWeeklyBonus, setHasClaimedWeeklyBonus] = useState<boolean>(false);
   const [showPhotoModal, setShowPhotoModal] = useState<boolean>(false);
   const [selectedVoucherTx, setSelectedVoucherTx] = useState<any>(null);
@@ -71,13 +72,40 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
     }
   };
 
-  const rouletteTx = sortChronologicalNewestFirst(
-    transactions.filter(
-      (t) => t.type === 'roulette_bet' || t.type === 'roulette_win' || t.description.toLowerCase().includes('roulette')
+  const sortedDeposits = sortChronologicalNewestFirst(deposits);
+  const sortedWithdrawals = sortChronologicalNewestFirst(withdrawals);
+  const sortedTransactions = sortChronologicalNewestFirst(transactions);
+
+  const casinoTx = sortChronologicalNewestFirst(
+    sortedTransactions.filter(
+      (t) =>
+        t.type === 'roulette_bet' ||
+        t.type === 'roulette_win' ||
+        t.type === 'dragon_tiger_bet' ||
+        t.type === 'dragon_tiger_win' ||
+        t.type === 'andar_bahar_bet' ||
+        t.type === 'andar_bahar_win' ||
+        t.description.toLowerCase().includes('roulette') ||
+        t.description.toLowerCase().includes('dragon tiger') ||
+        t.description.toLowerCase().includes('andar bahar')
     )
   );
+
+  const filteredCasinoTx = casinoTx.filter((t) => {
+    if (casinoSubFilter === 'roulette') {
+      return t.type === 'roulette_bet' || t.type === 'roulette_win' || t.description.toLowerCase().includes('roulette');
+    }
+    if (casinoSubFilter === 'dragon_tiger') {
+      return t.type === 'dragon_tiger_bet' || t.type === 'dragon_tiger_win' || t.description.toLowerCase().includes('dragon tiger');
+    }
+    if (casinoSubFilter === 'andar_bahar') {
+      return t.type === 'andar_bahar_bet' || t.type === 'andar_bahar_win' || t.description.toLowerCase().includes('andar bahar');
+    }
+    return true;
+  });
+
   const bonusTx = sortChronologicalNewestFirst(
-    transactions.filter(
+    sortedTransactions.filter(
       (t) =>
         t.type === 'wheel_bonus' ||
         t.type === 'admin_bonus' ||
@@ -342,15 +370,15 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       </div>
 
       {/* History Tabs Navigation */}
-      <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-2 gap-3">
         <div className="flex items-center gap-2 overflow-x-auto">
           {[
-            { id: 'deposits', label: 'Deposit History', count: deposits.length },
-            { id: 'withdrawals', label: 'Withdrawal History', count: withdrawals.length },
-            { id: 'roulette', label: 'Roulette Bets & Wins', count: rouletteTx.length },
+            { id: 'deposits', label: 'Deposit History', count: sortedDeposits.length },
+            { id: 'withdrawals', label: 'Withdrawal History', count: sortedWithdrawals.length },
+            { id: 'casino', label: 'Casino & Live Bets', count: casinoTx.length },
             { id: 'tickets', label: 'Ticket History', count: tickets.length },
             { id: 'bonuses', label: 'Vouchers & Bonuses', count: bonusTx.length },
-            { id: 'ledger', label: 'Wallet Ledger', count: transactions.length }
+            { id: 'ledger', label: 'Wallet Ledger', count: sortedTransactions.length }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -371,7 +399,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
         {/* Sub-filter if ticket history is selected */}
         {activeTab === 'tickets' && (
-          <div className="hidden sm:flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0">
             {(['all', 'win', 'loss'] as const).map((tf) => (
               <button
                 key={tf}
@@ -381,6 +409,28 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 }`}
               >
                 {tf}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Sub-filter if casino & live games tab is selected */}
+        {activeTab === 'casino' && (
+          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 overflow-x-auto shrink-0">
+            {[
+              { id: 'all', label: 'All Casino' },
+              { id: 'roulette', label: 'Roulette' },
+              { id: 'dragon_tiger', label: 'Dragon Tiger' },
+              { id: 'andar_bahar', label: 'Andar Bahar' }
+            ].map((cf) => (
+              <button
+                key={cf.id}
+                onClick={() => { soundFx.playClick(); setCasinoSubFilter(cf.id as typeof casinoSubFilter); }}
+                className={`px-2.5 py-1 text-[11px] font-mono font-bold whitespace-nowrap rounded-lg transition-all ${
+                  casinoSubFilter === cf.id ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {cf.label}
               </button>
             ))}
           </div>
@@ -468,12 +518,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
         {/* DEPOSIT HISTORY */}
         {activeTab === 'deposits' && (
-          deposits.length === 0 ? (
+          sortedDeposits.length === 0 ? (
             <div className="text-center py-12 text-slate-400 bg-slate-900/60 rounded-2xl border border-slate-800">
               No deposit records yet.
             </div>
           ) : (
-            deposits.map((dep) => (
+            sortedDeposits.map((dep) => (
               <div 
                 key={dep.id} 
                 className="p-4 bg-slate-900/90 border border-slate-800 hover:border-amber-500/50 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 cursor-pointer transition-all"
@@ -516,12 +566,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
         {/* WITHDRAWAL HISTORY */}
         {activeTab === 'withdrawals' && (
-          withdrawals.length === 0 ? (
+          sortedWithdrawals.length === 0 ? (
             <div className="text-center py-12 text-slate-400 bg-slate-900/60 rounded-2xl border border-slate-800">
               No withdrawal records yet.
             </div>
           ) : (
-            withdrawals.map((wth) => (
+            sortedWithdrawals.map((wth) => (
               <div 
                 key={wth.id} 
                 className="p-4 bg-slate-900/90 border border-slate-800 hover:border-amber-500/50 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 cursor-pointer transition-all"
@@ -562,15 +612,20 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           )
         )}
 
-        {/* ROULETTE HISTORY */}
-        {activeTab === 'roulette' && (
-          rouletteTx.length === 0 ? (
+        {/* CASINO & LIVE GAMES HISTORY */}
+        {activeTab === 'casino' && (
+          filteredCasinoTx.length === 0 ? (
             <div className="text-center py-12 text-slate-400 bg-slate-900/60 rounded-2xl border border-slate-800">
-              No roulette bets or wins yet.
+              No live casino bets or wins recorded yet.
             </div>
           ) : (
-            rouletteTx.map((tx) => {
-              const isWin = tx.type === 'roulette_win' || tx.amount > 0;
+            filteredCasinoTx.map((tx) => {
+              const isWin = tx.type.endsWith('_win') || tx.type === 'win' || tx.type === 'win_payout' || (tx.amount > 0 && !tx.type.endsWith('_bet'));
+              const isRoulette = tx.type.includes('roulette') || tx.description.toLowerCase().includes('roulette');
+              const isDragonTiger = tx.type.includes('dragon_tiger') || tx.description.toLowerCase().includes('dragon tiger');
+              const isAndarBahar = tx.type.includes('andar_bahar') || tx.description.toLowerCase().includes('andar bahar');
+              const gameTag = isRoulette ? '⚡ Roulette' : isDragonTiger ? '🐉 Dragon Tiger' : isAndarBahar ? '🃏 Andar Bahar' : '🎮 Casino';
+
               return (
                 <div
                   key={tx.id}
@@ -582,6 +637,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-mono font-bold text-amber-400">{tx.id}</span>
+                      <span className="text-[10px] font-mono font-black px-2 py-0.5 rounded-full bg-slate-800 border border-slate-700 text-amber-300">
+                        {gameTag}
+                      </span>
                       <span className="text-xs text-slate-400">• {tx.date}</span>
                     </div>
                     <p className="text-xs font-mono text-slate-200 font-bold">{tx.description}</p>
@@ -589,12 +647,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
                   <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-800">
                     <span className={`text-sm font-black font-mono ${isWin ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      {isWin ? '+' : ''}₹{Math.abs(tx.amount).toLocaleString('en-IN')}
+                      {isWin ? '+' : '-'}₹{Math.abs(tx.amount).toLocaleString('en-IN')}
                     </span>
                     <span className={`text-[11px] font-bold font-mono px-2.5 py-1 rounded-full border ${
-                      isWin ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300' : 'bg-slate-800 border-slate-700 text-slate-300'
+                      isWin ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300 animate-zoom-green' : 'bg-slate-800 border-slate-700 text-slate-300'
                     }`}>
-                      {isWin ? 'CREDITED' : 'DEBITED'}
+                      {isWin ? 'WON (+PAYOUT)' : 'BET PLACED'}
                     </span>
                     <button
                       onClick={(e) => {

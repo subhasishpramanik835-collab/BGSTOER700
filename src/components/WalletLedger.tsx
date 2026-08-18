@@ -48,16 +48,18 @@ export const WalletLedger: React.FC<WalletLedgerProps> = ({
   // Helper functions for classification
   const isLossTx = (tx: WalletTransaction) => {
     if (tx.status === 'rejected' || tx.status === 'failed') return false;
-    const lossTypes = ['roulette_bet', 'ticket_buy', 'loss', 'admin_deduction'];
+    const lossTypes = ['roulette_bet', 'dragon_tiger_bet', 'andar_bahar_bet', 'ticket_buy', 'loss', 'ticket_loss', 'admin_deduction'];
     if (lossTypes.includes(tx.type)) return true;
+    if (tx.type.endsWith('_bet')) return true;
     if (tx.amount < 0 && tx.type !== 'withdrawal') return true;
     return false;
   };
 
   const isWinTx = (tx: WalletTransaction) => {
     if (tx.status === 'rejected' || tx.status === 'failed' || tx.status === 'pending') return false;
-    const winTypes = ['roulette_win', 'win_payout', 'win', 'wheel_bonus', 'admin_bonus', 'vip_bonus'];
+    const winTypes = ['roulette_win', 'dragon_tiger_win', 'andar_bahar_win', 'win_payout', 'win', 'ticket_win', 'wheel_bonus', 'admin_bonus', 'vip_bonus'];
     if (winTypes.includes(tx.type)) return true;
+    if (tx.type.endsWith('_win')) return true;
     if (tx.type === 'deposit' && ((tx.status as string) === 'approved' || tx.status === 'completed')) return true;
     if (tx.amount > 0 && !isLossTx(tx)) return true;
     return false;
@@ -219,8 +221,18 @@ export const WalletLedger: React.FC<WalletLedgerProps> = ({
         if (tx.type !== 'deposit') return false;
       } else if (typeFilter === 'withdrawal') {
         if (tx.type !== 'withdrawal') return false;
-      } else if (typeFilter === 'roulette') {
-        if (tx.type !== 'roulette_bet' && tx.type !== 'roulette_win' && !tx.description.toLowerCase().includes('roulette')) return false;
+      } else if (typeFilter === 'roulette' || typeFilter === 'casino') {
+        if (
+          tx.type !== 'roulette_bet' &&
+          tx.type !== 'roulette_win' &&
+          tx.type !== 'dragon_tiger_bet' &&
+          tx.type !== 'dragon_tiger_win' &&
+          tx.type !== 'andar_bahar_bet' &&
+          tx.type !== 'andar_bahar_win' &&
+          !tx.description.toLowerCase().includes('roulette') &&
+          !tx.description.toLowerCase().includes('dragon tiger') &&
+          !tx.description.toLowerCase().includes('andar bahar')
+        ) return false;
       } else if (typeFilter === 'ticket') {
         if (tx.type !== 'ticket_buy' && tx.type !== 'win_payout' && tx.type !== 'win' && !tx.description.toLowerCase().includes('ticket')) return false;
       } else if (typeFilter === 'bonus') {
@@ -242,11 +254,11 @@ export const WalletLedger: React.FC<WalletLedgerProps> = ({
 
   // Calculate Ledger Statistics
   const totalInflow = transactions
-    .filter((tx) => tx.amount > 0 && tx.status === 'completed')
-    .reduce((sum, tx) => sum + tx.amount, 0);
+    .filter((tx) => isWinTx(tx) && (tx.status === 'completed' || (tx.status as string) === 'approved'))
+    .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
 
   const totalOutflow = transactions
-    .filter((tx) => tx.amount < 0 && (tx.status === 'completed' || tx.status === 'pending'))
+    .filter((tx) => (isLossTx(tx) || tx.type === 'withdrawal') && (tx.status === 'completed' || tx.status === 'pending' || (tx.status as string) === 'approved'))
     .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
 
   // Helper for Transaction Type Display
@@ -397,7 +409,7 @@ export const WalletLedger: React.FC<WalletLedgerProps> = ({
       );
     }
 
-    if (tx.amount >= 0) {
+    if (isWinTx(tx)) {
       return (
         <span className="inline-flex items-center gap-1.5 text-xs font-mono font-black px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400 shadow-lg">
           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
@@ -512,7 +524,7 @@ export const WalletLedger: React.FC<WalletLedgerProps> = ({
             }`}
           >
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Roulette Bets & Wins</span>
+            <span>Casino & Live Bets</span>
           </button>
 
           <button

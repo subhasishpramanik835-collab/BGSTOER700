@@ -573,7 +573,7 @@ export const LiveRoulette: React.FC<LiveRouletteProps> = ({
     }
 
     // Complete Uninterrupted Spoken Hindi Announcement with User Name & Win Amount
-    const colorHindi = color === 'green' ? 'Zero Green' : color === 'red' ? 'Laal Red' : 'Kaala Black';
+    const colorHindi = color === 'green' ? 'Zero Hara' : color === 'red' ? 'Laal Red' : 'Kaala Black';
     const parityHindi = targetWinNum === 0 ? '' : (targetWinNum % 2 === 0 ? 'Even' : 'Odd');
     const rangeHindi = targetWinNum === 0 ? '' : (targetWinNum <= 18 ? 'Low 1 se 18' : 'High 19 se 36');
     const multHindi = luckyHit ? `, aur lightning multiplier ${luckyHit.multiplier}x!` : '!';
@@ -590,6 +590,7 @@ export const LiveRoulette: React.FC<LiveRouletteProps> = ({
       onAddTransaction({
         id: `TX-WIN-${Date.now()}`,
         userId: user.id,
+        userEmail: (user.email || '').toLowerCase().trim(),
         type: 'roulette_win',
         amount: totalWin,
         description: `Won ₹${totalWin} on Hindi Lightning Roulette #${roundId} (Number ${targetWinNum})`,
@@ -606,18 +607,23 @@ export const LiveRoulette: React.FC<LiveRouletteProps> = ({
     }
 
     // Announce the complete speech without cutting off, and ONLY restart betting after voice finishes
+    let hasRestarted = false;
+    const triggerNextRound = () => {
+      if (hasRestarted) return;
+      hasRestarted = true;
+      startBettingPhase();
+    };
+
     announceHindiVoice(speechText, () => {
       setTimeout(() => {
-        startBettingPhase();
-      }, 2500);
+        triggerNextRound();
+      }, 1500);
     });
 
     // Fallback timer in case speech synthesis is blocked or disabled in browser
     setTimeout(() => {
-      if (gamePhase === 'settled') {
-        startBettingPhase();
-      }
-    }, 9000);
+      triggerNextRound();
+    }, 16000);
   };
 
   const getNumberColor = (num: number): 'green' | 'red' | 'black' => {
@@ -736,7 +742,7 @@ export const LiveRoulette: React.FC<LiveRouletteProps> = ({
     <div className="fixed inset-0 z-50 bg-[#090b10] text-slate-100 flex flex-col h-[100dvh] max-h-screen overflow-hidden font-sans select-none">
       
       {/* 1. TOP COMPACT HEADER */}
-      <div className="h-10 sm:h-11 bg-black/95 border-b border-amber-500/30 px-2 sm:px-3 flex items-center justify-between shrink-0 z-30 font-mono">
+      <div className="h-9 sm:h-10 bg-black/95 border-b border-amber-500/30 px-2 sm:px-3 flex items-center justify-between shrink-0 z-30 font-mono">
         
         {/* Left: Back Button */}
         <div className="flex items-center gap-1.5">
@@ -760,7 +766,7 @@ export const LiveRoulette: React.FC<LiveRouletteProps> = ({
 
           <button
             onClick={() => { soundFx.playClick(); onOpenDeposit(); }}
-            className="px-2.5 py-0.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md active:scale-95 transition-all cursor-pointer"
+            className="px-2 py-0.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] shadow-md active:scale-95 transition-all cursor-pointer"
           >
             Deposit
           </button>
@@ -770,15 +776,15 @@ export const LiveRoulette: React.FC<LiveRouletteProps> = ({
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => { soundFx.playClick(); setShowGameHistory(true); }}
-            className="w-7 h-7 rounded-lg bg-amber-500/20 border border-amber-400/60 text-amber-400 hover:bg-amber-500/40 flex items-center justify-center cursor-pointer shadow active:scale-95"
+            className="w-6.5 h-6.5 rounded-lg bg-amber-500/20 border border-amber-400/60 text-amber-400 hover:bg-amber-500/40 flex items-center justify-center cursor-pointer shadow active:scale-95"
             title="Game History"
           >
-            <Bookmark className="w-3.5 h-3.5 fill-amber-400" />
+            <Bookmark className="w-3 h-3 fill-amber-400" />
           </button>
 
           <button
             onClick={() => setIsMuted(soundFx.toggleMute())}
-            className="w-7 h-7 rounded-full bg-slate-900 border border-slate-700 text-slate-300 hover:text-white flex items-center justify-center cursor-pointer"
+            className="w-6.5 h-6.5 rounded-full bg-slate-900 border border-slate-700 text-slate-300 hover:text-white flex items-center justify-center cursor-pointer"
             title="Mute/Unmute"
           >
             {isMuted ? <VolumeX className="w-3 h-3 text-rose-400" /> : <Volume2 className="w-3 h-3 text-emerald-400" />}
@@ -786,7 +792,7 @@ export const LiveRoulette: React.FC<LiveRouletteProps> = ({
 
           <button
             onClick={() => { soundFx.playClick(); setShowHistoryOverlay(true); }}
-            className="w-7 h-7 rounded-full bg-slate-900 border border-slate-700 text-amber-400 hover:text-amber-300 flex items-center justify-center cursor-pointer"
+            className="w-6.5 h-6.5 rounded-full bg-slate-900 border border-slate-700 text-amber-400 hover:text-amber-300 flex items-center justify-center cursor-pointer"
             title="Statistics"
           >
             <BarChart2 className="w-3 h-3" />
@@ -795,8 +801,61 @@ export const LiveRoulette: React.FC<LiveRouletteProps> = ({
 
       </div>
 
-      {/* 2. RECENT RESULTS STREAM TAPE */}
-      <div className="h-7 bg-[#0c0f17] border-b border-amber-500/20 px-2 py-0.5 flex items-center justify-between gap-1 overflow-x-auto shrink-0 font-mono select-none">
+      {/* 2. USER BET HISTORY STREAM STRIP (Directly Under Header as requested) */}
+      <div className="h-6.5 bg-[#0b0e15] border-b border-amber-500/20 px-2 py-0.5 flex items-center justify-between gap-1 shrink-0 font-mono text-[9px]">
+        <div className="flex items-center gap-1 shrink-0 pr-1.5 border-r border-slate-800">
+          <History className="w-2.5 h-2.5 text-amber-400" />
+          <span className="text-[8px] font-bold text-amber-300 uppercase tracking-tight">My Bets</span>
+        </div>
+
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-none flex-1 py-0.2">
+          {userBetHistory.length === 0 ? (
+            <span className="text-[8px] text-slate-400 italic">No bets placed yet</span>
+          ) : (
+            userBetHistory.slice(0, 10).map((b) => {
+              const isWin = b.resultAmount > 0;
+              return (
+                <button
+                  key={b.id}
+                  onClick={() => { soundFx.playClick(); setShowGameHistory(true); }}
+                  className={`shrink-0 px-1.5 py-0.2 rounded border text-[8px] flex items-center gap-1 cursor-pointer transition-all hover:scale-105 ${
+                    isWin
+                      ? 'bg-emerald-950/90 border-emerald-500/70 text-emerald-300 shadow-[0_0_6px_rgba(16,185,129,0.4)]'
+                      : 'bg-slate-900/90 border-slate-700 text-slate-300'
+                  }`}
+                  title={`Round ${b.roundId} • Bet: ₹${b.betAmount} • Result: ${isWin ? `+₹${b.resultAmount}` : `-₹${Math.abs(b.resultAmount)}`}`}
+                >
+                  <span className="text-slate-400 text-[7px]">{b.timestamp.slice(0, 5)}</span>
+                  <span>₹{b.betAmount}</span>
+                  <span className={`font-bold ${isWin ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {isWin ? `+₹${b.resultAmount}` : `-₹${Math.abs(b.resultAmount)}`}
+                  </span>
+                  {b.winningNumber !== undefined && (
+                    <span className={`text-[7px] px-0.5 rounded font-black ${
+                      getNumberColor(b.winningNumber) === 'red' ? 'bg-rose-900 text-rose-200' :
+                      b.winningNumber === 0 ? 'bg-emerald-900 text-emerald-200' :
+                      'bg-slate-800 text-slate-200'
+                    }`}>
+                      #{b.winningNumber}
+                    </span>
+                  )}
+                </button>
+              );
+            })
+          )}
+        </div>
+
+        <button
+          onClick={() => { soundFx.playClick(); setShowGameHistory(true); }}
+          className="text-[8px] font-bold text-amber-400 hover:text-amber-300 shrink-0 pl-1 border-l border-slate-800 flex items-center gap-0.5 cursor-pointer"
+        >
+          <span>History</span>
+          <ChevronRight className="w-2.5 h-2.5" />
+        </button>
+      </div>
+
+      {/* 3. RECENT RESULTS STREAM TAPE */}
+      <div className="h-6 bg-[#080a0f] border-b border-amber-500/20 px-2 py-0.5 flex items-center justify-between gap-1 overflow-x-auto shrink-0 font-mono select-none">
         <div className="flex items-center gap-1 overflow-x-auto scrollbar-none flex-1">
           {recentHistory.map((item, idx) => {
             const col = getNumberColor(item.number);
@@ -804,12 +863,12 @@ export const LiveRoulette: React.FC<LiveRouletteProps> = ({
             return (
               <div
                 key={`${item.number}_${idx}`}
-                className={`relative shrink-0 flex items-center justify-center font-bold text-[10px] sm:text-xs transition-all ${
+                className={`relative shrink-0 flex items-center justify-center font-bold text-[9px] sm:text-[10px] transition-all ${
                   item.multiplier
-                    ? 'px-1.5 py-0.2 rounded bg-gradient-to-b from-amber-500 to-amber-700 border border-amber-300 text-white shadow-[0_0_8px_rgba(245,158,11,0.8)]'
+                    ? 'px-1 py-0.2 rounded bg-gradient-to-b from-amber-500 to-amber-700 border border-amber-300 text-white shadow-[0_0_6px_rgba(245,158,11,0.8)]'
                     : isNewest
-                    ? 'w-5 h-5 rounded font-black ring-1 ring-amber-400 shadow-md'
-                    : 'w-5 h-5 rounded opacity-90'
+                    ? 'w-4.5 h-4.5 rounded font-black ring-1 ring-amber-400 shadow-md'
+                    : 'w-4.5 h-4.5 rounded opacity-90'
                 } ${
                   item.multiplier ? '' :
                   col === 'green' ? 'bg-emerald-700 text-white' :
@@ -819,7 +878,7 @@ export const LiveRoulette: React.FC<LiveRouletteProps> = ({
               >
                 <span>{item.number}</span>
                 {item.multiplier && (
-                  <span className="text-[7px] ml-0.5 font-black leading-none text-yellow-200">
+                  <span className="text-[6px] ml-0.5 font-black leading-none text-yellow-200">
                     {item.multiplier}x
                   </span>
                 )}
@@ -830,36 +889,36 @@ export const LiveRoulette: React.FC<LiveRouletteProps> = ({
 
         <button
           onClick={() => { soundFx.playClick(); setShowHistoryOverlay(true); }}
-          className="w-5 h-5 rounded bg-slate-900 text-slate-400 hover:text-white flex items-center justify-center shrink-0"
+          className="w-4.5 h-4.5 rounded bg-slate-900 text-slate-400 hover:text-white flex items-center justify-center shrink-0"
         >
-          <BarChart2 className="w-3 h-3" />
+          <BarChart2 className="w-2.5 h-2.5" />
         </button>
       </div>
 
-      {/* 3. MAIN LIVE STAGE AREA */}
+      {/* 4. MAIN LIVE STAGE AREA (FITS SCREEN WITHOUT SCROLLING) */}
       <div className="relative flex-1 min-h-0 bg-gradient-to-b from-[#05070c] via-[#090b12] to-[#040508] overflow-hidden flex flex-col justify-between p-1">
         
-        {/* UPPER STAGE: STUDIO AMBIENCE & LOTUS PEDESTAL */}
-        <div className="relative w-full h-[125px] xs:h-[140px] sm:h-[160px] md:h-[180px] shrink-0 overflow-hidden flex items-center justify-center">
+        {/* UPPER STAGE: STUDIO AMBIENCE & COMPACT PEDESTAL */}
+        <div className="relative w-full h-[65px] xs:h-[75px] sm:h-[85px] shrink-0 overflow-hidden flex items-center justify-center">
           
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-900/25 via-slate-950 to-black pointer-events-none" />
 
-          {/* 3 Large Hanging Gold Frames at Studio Wall */}
-          <div className="absolute top-1 w-full max-w-xs px-2 flex items-center justify-center gap-1.5 sm:gap-2.5 z-10">
+          {/* 3 Hanging Gold Frames at Studio Wall */}
+          <div className="absolute top-0.5 w-full max-w-xs px-2 flex items-center justify-center gap-1.5 sm:gap-2 z-10">
             {lightningNumbers.map((l) => (
               <div
                 key={l.number}
-                className="w-16 sm:w-20 h-16 sm:h-20 rounded-lg border border-amber-400/80 bg-gradient-to-b from-amber-950/90 via-black to-amber-950/90 p-1 flex flex-col items-center justify-between shadow-[0_0_12px_rgba(245,158,11,0.5)]"
+                className="w-12 sm:w-14 h-12 sm:h-14 rounded-lg border border-amber-400/80 bg-gradient-to-b from-amber-950/90 via-black to-amber-950/90 p-0.5 flex flex-col items-center justify-between shadow-[0_0_8px_rgba(245,158,11,0.5)]"
               >
                 <div className="w-full flex-1 flex items-center justify-center">
-                  <span className={`text-xl sm:text-2xl font-black font-mono drop-shadow-[0_0_8px_#f59e0b] ${
+                  <span className={`text-sm sm:text-base font-black font-mono drop-shadow-[0_0_6px_#f59e0b] ${
                     getNumberColor(l.number) === 'red' ? 'text-rose-400' : l.number === 0 ? 'text-emerald-400' : 'text-white'
                   }`}>
                     {l.number}
                   </span>
                 </div>
 
-                <div className="w-full py-0.2 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-slate-950 font-black font-mono text-[9px] sm:text-[10px] rounded text-center tracking-tight">
+                <div className="w-full py-0.2 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-slate-950 font-black font-mono text-[8px] sm:text-[9px] rounded text-center tracking-tight">
                   {l.multiplier}x
                 </div>
               </div>
@@ -867,9 +926,9 @@ export const LiveRoulette: React.FC<LiveRouletteProps> = ({
           </div>
 
           {/* Center Live Pedestal with Golden Lotus Wheel Centerpiece */}
-          <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex flex-col items-center">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 relative flex items-center justify-center animate-lotus-glow">
-              <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_10px_#f59e0b]">
+          <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 flex flex-col items-center">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 relative flex items-center justify-center animate-lotus-glow">
+              <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-[0_0_8px_#f59e0b]">
                 <g fill="#d97706" stroke="#fbbf24" strokeWidth="1">
                   <path d="M50 15 C45 35, 45 45, 50 65 C55 45, 55 35, 50 15 Z" />
                   <path d="M35 22 C35 40, 42 50, 50 65 C42 45, 25 35, 35 22 Z" />
@@ -881,15 +940,15 @@ export const LiveRoulette: React.FC<LiveRouletteProps> = ({
                 <circle cx="50" cy="55" r="3" fill="#dc2626" />
               </svg>
             </div>
-            <div className="w-28 sm:w-36 h-3.5 bg-gradient-to-r from-amber-950 via-amber-700 to-amber-950 rounded-full border border-amber-400" />
+            <div className="w-20 sm:w-28 h-2 bg-gradient-to-r from-amber-950 via-amber-700 to-amber-950 rounded-full border border-amber-400" />
           </div>
 
           {/* Live Indian Dealer Saanvi Badge & Countdown */}
-          <div className="absolute bottom-1 right-2 bg-black/70 backdrop-blur-md border border-amber-500/40 px-2 py-0.5 rounded-lg flex items-center gap-1.5 z-10">
+          <div className="absolute bottom-0.5 right-1.5 bg-black/70 backdrop-blur-md border border-amber-500/40 px-1.5 py-0.2 rounded flex items-center gap-1 z-10">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-            <span className="text-[9px] sm:text-[10px] font-mono font-bold text-amber-300">Host Saanvi</span>
+            <span className="text-[8px] sm:text-[9px] font-mono font-bold text-amber-300">Host Saanvi</span>
             {gamePhase === 'betting' && (
-              <span className="text-[9px] font-mono font-black text-rose-400 bg-black/80 px-1 rounded">
+              <span className="text-[8px] font-mono font-black text-rose-400 bg-black/80 px-1 rounded">
                 ⏱ {countdown}s
               </span>
             )}
@@ -897,13 +956,13 @@ export const LiveRoulette: React.FC<LiveRouletteProps> = ({
 
         </div>
 
-        {/* 4. COMPACT VERTICAL BETTING TABLE */}
-        <div className="flex-1 min-h-0 flex flex-col justify-between gap-1 max-w-md mx-auto w-full">
+        {/* 5. ULTRA-COMPACT BETTING TABLE (FITS ON SCREEN WITHOUT SCROLLING) */}
+        <div className="flex-1 min-h-0 flex flex-col justify-between gap-0.5 max-w-md mx-auto w-full">
           
-          <div className="relative bg-[#0c0f16]/95 border border-amber-500/40 rounded-xl p-1 shadow-xl flex items-stretch gap-0.5">
+          <div className="relative bg-[#0c0f16]/95 border border-amber-500/40 rounded-lg p-0.5 shadow-xl flex items-stretch gap-0.5">
             
             {/* Left 1: Outside Bets */}
-            <div className="flex flex-col justify-between w-8 sm:w-10 gap-0.5 font-mono font-bold text-[8px] sm:text-[9px]">
+            <div className="flex flex-col justify-between w-7 sm:w-8 gap-0.5 font-mono font-bold text-[7px] sm:text-[8px]">
               {[
                 { type: { kind: 'range', value: '1-18' }, label: '1-18' },
                 { type: { kind: 'parity', value: 'even' }, label: 'EVEN' },
@@ -917,7 +976,7 @@ export const LiveRoulette: React.FC<LiveRouletteProps> = ({
                   <button
                     key={i}
                     onClick={() => handlePlaceBet(b.type as BetType, b.label)}
-                    className={`flex-1 min-h-[19px] sm:min-h-[22px] rounded border flex items-center justify-center relative cursor-pointer active:scale-95 transition-all ${
+                    className={`flex-1 min-h-[16px] sm:min-h-[18px] rounded border flex items-center justify-center relative cursor-pointer active:scale-95 transition-all ${
                       b.isRed ? 'bg-rose-900/70 border-rose-600 text-rose-300' :
                       b.isBlack ? 'bg-slate-950 border-slate-700 text-white' :
                       'bg-slate-900/80 border-slate-700 text-slate-300'
@@ -925,7 +984,7 @@ export const LiveRoulette: React.FC<LiveRouletteProps> = ({
                   >
                     <span className="leading-tight">{b.label}</span>
                     {betAmt > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-amber-400 text-slate-950 text-[7px] font-black px-0.5 rounded-full">
+                      <span className="absolute -top-1 -right-1 bg-amber-400 text-slate-950 text-[6px] font-black px-0.5 rounded-full">
                         ₹{betAmt}
                       </span>
                     )}
@@ -935,7 +994,7 @@ export const LiveRoulette: React.FC<LiveRouletteProps> = ({
             </div>
 
             {/* Left 2: Dozen Bets */}
-            <div className="flex flex-col justify-between w-7 sm:w-9 gap-0.5 font-mono font-bold text-[8px] sm:text-[9px]">
+            <div className="flex flex-col justify-between w-6 sm:w-7 gap-0.5 font-mono font-bold text-[7px] sm:text-[8px]">
               {[
                 { key: '1st12', label: '1st 12' },
                 { key: '2nd12', label: '2nd 12' },
@@ -946,13 +1005,13 @@ export const LiveRoulette: React.FC<LiveRouletteProps> = ({
                   <button
                     key={d.key}
                     onClick={() => handlePlaceBet({ kind: 'dozen', value: d.key as any }, d.label)}
-                    className={`flex-1 min-h-[40px] sm:min-h-[46px] bg-slate-900/90 border border-amber-500/30 text-amber-300 rounded flex items-center justify-center relative cursor-pointer active:scale-95 transition-all ${
+                    className={`flex-1 min-h-[32px] sm:min-h-[38px] bg-slate-900/90 border border-amber-500/30 text-amber-300 rounded flex items-center justify-center relative cursor-pointer active:scale-95 transition-all ${
                       betAmt > 0 ? 'ring-1 ring-amber-400' : ''
                     }`}
                   >
-                    <span className="rotate-[-90deg] whitespace-nowrap text-[8px]">{d.label}</span>
+                    <span className="rotate-[-90deg] whitespace-nowrap text-[7px]">{d.label}</span>
                     {betAmt > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-amber-400 text-slate-950 text-[7px] font-black px-0.5 rounded-full">
+                      <span className="absolute -top-1 -right-1 bg-amber-400 text-slate-950 text-[6px] font-black px-0.5 rounded-full">
                         ₹{betAmt}
                       </span>
                     )}
@@ -972,7 +1031,7 @@ export const LiveRoulette: React.FC<LiveRouletteProps> = ({
                   <div className="relative">
                     <button
                       onClick={() => handlePlaceBet({ kind: 'number', value: 0 }, '0')}
-                      className={`w-full h-5 sm:h-6 rounded border font-mono font-black text-[11px] sm:text-xs flex items-center justify-center relative cursor-pointer active:scale-95 transition-all ${
+                      className={`w-full h-4 sm:h-4.5 rounded border font-mono font-black text-[9px] sm:text-[10px] flex items-center justify-center relative cursor-pointer active:scale-95 transition-all ${
                         zeroLucky
                           ? 'animate-lightning-strike bg-gradient-to-r from-amber-950 via-emerald-800 to-amber-950 border-amber-300 text-yellow-300'
                           : 'bg-emerald-800 hover:bg-emerald-700 border-emerald-500 text-white'
@@ -980,12 +1039,12 @@ export const LiveRoulette: React.FC<LiveRouletteProps> = ({
                     >
                       <span>0</span>
                       {zeroLucky && (
-                        <span className="absolute -top-1.5 right-2 bg-amber-400 text-slate-950 font-black text-[7px] px-1 rounded-full">
+                        <span className="absolute -top-1 right-2 bg-amber-400 text-slate-950 font-black text-[6px] px-1 rounded-full">
                           ⚡{zeroLucky.multiplier}x
                         </span>
                       )}
                       {betAmt > 0 && (
-                        <span className="absolute -bottom-1 -right-1 bg-amber-400 text-slate-950 text-[7px] font-black px-0.5 rounded-full">
+                        <span className="absolute -bottom-0.5 -right-0.5 bg-amber-400 text-slate-950 text-[6px] font-black px-0.5 rounded-full">
                           ₹{betAmt}
                         </span>
                       )}
@@ -1019,7 +1078,7 @@ export const LiveRoulette: React.FC<LiveRouletteProps> = ({
                         <div key={num} className="relative flex items-stretch">
                           <button
                             onClick={() => handlePlaceBet({ kind: 'number', value: num }, `${num}`)}
-                            className={`w-full h-4.5 sm:h-5.5 rounded border font-mono font-bold text-[10px] sm:text-xs flex items-center justify-center relative cursor-pointer active:scale-95 transition-all ${
+                            className={`w-full h-3.5 xs:h-4 sm:h-4.5 rounded border font-mono font-bold text-[9px] sm:text-[10px] flex items-center justify-center relative cursor-pointer active:scale-95 transition-all ${
                               luckyHit
                                 ? 'animate-lightning-strike bg-gradient-to-b from-amber-950 via-slate-900 to-amber-950 border-amber-400 text-yellow-300'
                                 : col === 'red'
@@ -1029,12 +1088,12 @@ export const LiveRoulette: React.FC<LiveRouletteProps> = ({
                           >
                             <span>{num}</span>
                             {luckyHit && (
-                              <span className="absolute -top-1 left-1/2 -translate-x-1/2 bg-amber-400 text-slate-950 font-black text-[6px] sm:text-[7px] px-0.5 rounded-full whitespace-nowrap z-40">
+                              <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 bg-amber-400 text-slate-950 font-black text-[5px] sm:text-[6px] px-0.5 rounded-full whitespace-nowrap z-40">
                                 ⚡{luckyHit.multiplier}x
                               </span>
                             )}
                             {betAmt > 0 && (
-                              <span className="absolute -bottom-1 -right-1 bg-amber-400 text-slate-950 text-[7px] font-black px-0.5 rounded-full">
+                              <span className="absolute -bottom-0.5 -right-0.5 bg-amber-400 text-slate-950 text-[6px] font-black px-0.5 rounded-full">
                                 ₹{betAmt}
                               </span>
                             )}
@@ -1054,13 +1113,13 @@ export const LiveRoulette: React.FC<LiveRouletteProps> = ({
                     <button
                       key={cKey}
                       onClick={() => handlePlaceBet({ kind: 'column', value: cKey as any }, '2:1 Col')}
-                      className={`h-5 bg-slate-900 border border-amber-500/40 text-amber-300 font-mono font-bold text-[9px] rounded flex items-center justify-center relative cursor-pointer active:scale-95 ${
+                      className={`h-4 sm:h-4.5 bg-slate-900 border border-amber-500/40 text-amber-300 font-mono font-bold text-[8px] rounded flex items-center justify-center relative cursor-pointer active:scale-95 ${
                         betAmt > 0 ? 'ring-1 ring-amber-400' : ''
                       }`}
                     >
                       <span>2:1</span>
                       {betAmt > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-amber-400 text-slate-950 text-[7px] font-black px-0.5 rounded-full">
+                        <span className="absolute -top-0.5 -right-0.5 bg-amber-400 text-slate-950 text-[6px] font-black px-0.5 rounded-full">
                           ₹{betAmt}
                         </span>
                       )}
@@ -1072,60 +1131,60 @@ export const LiveRoulette: React.FC<LiveRouletteProps> = ({
             </div>
 
             {/* Right Side Floating Controls */}
-            <div className="flex flex-col justify-around w-8 sm:w-9 gap-0.5 font-mono text-[8px]">
+            <div className="flex flex-col justify-around w-7 sm:w-8 gap-0.5 font-mono text-[7px]">
               <button
                 onClick={handleClearBets}
                 disabled={gamePhase !== 'betting' || betsLocked || bets.length === 0}
-                className="flex-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 flex flex-col items-center justify-center p-0.5 active:scale-90 disabled:opacity-40 cursor-pointer"
+                className="flex-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 flex flex-col items-center justify-center p-0.2 active:scale-90 disabled:opacity-40 cursor-pointer"
                 title="Undo / Clear"
               >
-                <RotateCcw className="w-3 h-3" />
-                <span className="text-[7px] mt-0.2">UNDO</span>
+                <RotateCcw className="w-2.5 h-2.5" />
+                <span className="text-[6px]">UNDO</span>
               </button>
 
               <button
                 onClick={handleDoubleBets}
                 disabled={gamePhase !== 'betting' || betsLocked || bets.length === 0}
-                className="flex-1 rounded bg-slate-900 hover:bg-slate-800 border border-amber-500/40 text-amber-400 flex flex-col items-center justify-center p-0.5 active:scale-90 disabled:opacity-40 cursor-pointer"
+                className="flex-1 rounded bg-slate-900 hover:bg-slate-800 border border-amber-500/40 text-amber-400 flex flex-col items-center justify-center p-0.2 active:scale-90 disabled:opacity-40 cursor-pointer"
                 title="2X Double Bets"
               >
-                <span className="font-black text-[10px]">x2</span>
-                <span className="text-[7px]">DOUBLE</span>
+                <span className="font-black text-[9px]">x2</span>
+                <span className="text-[6px]">2X</span>
               </button>
 
               <button
                 onClick={handleRepeatBets}
                 disabled={gamePhase !== 'betting' || betsLocked || lastBets.length === 0}
-                className="flex-1 rounded bg-slate-900 hover:bg-slate-800 border border-emerald-500/40 text-emerald-400 flex flex-col items-center justify-center p-0.5 active:scale-90 disabled:opacity-40 cursor-pointer"
+                className="flex-1 rounded bg-slate-900 hover:bg-slate-800 border border-emerald-500/40 text-emerald-400 flex flex-col items-center justify-center p-0.2 active:scale-90 disabled:opacity-40 cursor-pointer"
                 title="Repeat Last Bet"
               >
-                <RefreshCw className="w-3 h-3" />
-                <span className="text-[7px] mt-0.2">REPEAT</span>
+                <RefreshCw className="w-2.5 h-2.5" />
+                <span className="text-[6px]">REPEAT</span>
               </button>
             </div>
 
           </div>
 
-          {/* 5. DEALER TICKER + GAME LIMITS BAR */}
-          <div className="flex flex-col gap-0.5 font-mono text-[10px] shrink-0">
-            <div className="px-2 py-0.5 bg-black/85 border border-amber-500/30 rounded-lg text-amber-300 text-[10px] truncate flex items-center justify-between">
+          {/* 6. DEALER TICKER + GAME LIMITS BAR */}
+          <div className="flex flex-col gap-0.2 font-mono text-[9px] shrink-0">
+            <div className="px-2 py-0.5 bg-black/85 border border-amber-500/30 rounded text-amber-300 text-[9px] truncate flex items-center justify-between">
               <span className="truncate">{dealerMessage}</span>
-              <span className="text-slate-400 text-[8px] shrink-0 ml-1">● LIVE</span>
+              <span className="text-slate-400 text-[7px] shrink-0 ml-1">● LIVE</span>
             </div>
 
-            <div className="flex items-center justify-between px-1 text-[9px] text-slate-300">
+            <div className="flex items-center justify-between px-1 text-[8px] text-slate-300">
               <div>
                 <span>Total Bet </span>
                 <strong className="text-amber-400">₹{totalBetAmount}</strong>
               </div>
-              <div className="text-slate-400 text-[8px]">
+              <div className="text-slate-400 text-[7px]">
                 Hindi Lightning Roulette ₹20 - 10,000,000
               </div>
             </div>
           </div>
 
-          {/* 6. CHIPS BAR AT BOTTOM */}
-          <div className="flex items-center justify-center gap-1 sm:gap-2 pb-0.5 shrink-0">
+          {/* 7. CHIPS BAR AT BOTTOM */}
+          <div className="flex items-center justify-center gap-1 sm:gap-1.5 pb-0.5 shrink-0">
             {CHIP_VALUES.map((val) => {
               const isSelected = selectedChip === val;
               const chipColor = 
@@ -1140,7 +1199,7 @@ export const LiveRoulette: React.FC<LiveRouletteProps> = ({
                 <button
                   key={val}
                   onClick={() => { soundFx.playClick(); setSelectedChip(val); }}
-                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full font-mono font-black text-[9px] sm:text-[10px] flex items-center justify-center border shadow-md transition-all active:scale-90 cursor-pointer ${chipColor} ${
+                  className={`w-6 h-6 xs:w-7 xs:h-7 sm:w-7.5 sm:h-7.5 rounded-full font-mono font-black text-[8px] sm:text-[9px] flex items-center justify-center border shadow-md transition-all active:scale-90 cursor-pointer ${chipColor} ${
                     isSelected ? 'ring-2 ring-amber-400 scale-110 z-10 shadow-[0_0_8px_#f59e0b]' : 'opacity-85 hover:opacity-100'
                   }`}
                 >
